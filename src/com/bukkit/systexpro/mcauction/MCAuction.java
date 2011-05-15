@@ -47,19 +47,20 @@ public class MCAuction extends JavaPlugin {
 			try {
 				this.AuctionItems.createNewFile();
 			} catch (IOException e) {
+				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
-		
+
 		//Check for Money Jar
 		this.loadConfig();
 		this.loadMoneyJar();
 	}
-	
+
 	private void loadConfig() {
-		 Configuration config  = new Configuration(AuctionCon);
+		Configuration config  = new Configuration(AuctionCon);
 		if(AuctionCon.exists() ) {
-		    config.load();
+			config.load();
 		} else {
 			config.setProperty("use-global-message", globalMessage);
 			config.save();
@@ -68,11 +69,13 @@ public class MCAuction extends JavaPlugin {
 
 	public boolean onCommand(CommandSender sender, Command cmd, String commandLabel, String[] args) {
 		if(cmd.getName().equals("auction"))
-		{
+		{	
 			return mainCommand(sender,args);
-		}
 
+		} 
 		return super.onCommand(sender, cmd, commandLabel, args);
+
+
 	}
 
 
@@ -86,8 +89,7 @@ public class MCAuction extends JavaPlugin {
 					this.sendText(player, "(Item) " + itemsA[x]);
 				}
 				return true;
-			}
-			if(command.equalsIgnoreCase("money")) {
+			} else if(command.equalsIgnoreCase("money")) {
 				if(this.hasBankAccount(player)) {
 					Holdings balance = iConomy.getAccount(player.getDisplayName()).getHoldings();
 					this.sendText(player, Double.toString(balance.balance()));
@@ -96,18 +98,39 @@ public class MCAuction extends JavaPlugin {
 					this.sendText(player, "You need a Bank Account");
 					return true;
 				}
-				
-			}
-			if(command.equalsIgnoreCase("buy"))  {
+			} else if(command.equalsIgnoreCase("buy"))  {
 				String item = args[1];
 				int amount = Integer.parseInt(args[2]);
 				this.getServer().broadcastMessage(player.getDisplayName() + " is buying " + item + " for " + amount);
 				return true;
+			} else if(command.equalsIgnoreCase("help"))  {
+				return this.help(player);
+			} else if(args[0].length() > 0) {
+				player.sendMessage(Integer.toString(args.length));
+				return true;
+			} else {
+				player.sendMessage(Integer.toString(args.length));
+				return true;
 			}
 		}
-		return false;
+		sender.sendMessage(Integer.toString(args.length));
+		return true;
 	}
 	
+	
+	private boolean help(CommandSender sender) {
+		if (sender instanceof Player) {
+			Player player = (Player) sender;
+			player.sendMessage(ChatColor.GREEN + "MCAuction (" + ChatColor.WHITE + "1.0" + ChatColor.GREEN + ")");
+			player.sendMessage("Required " + ChatColor.RED + "[] " + ChatColor.WHITE + "Optional " + ChatColor.GREEN + "<>");
+			player.sendRawMessage(ChatColor.YELLOW + "/auction money " + ChatColor.GREEN + "- " + ChatColor.WHITE + "Views how much money you have.");
+			player.sendRawMessage(ChatColor.YELLOW + "/auction buy " + ChatColor.RED + "[" + ChatColor.WHITE + "item" + ChatColor.RED + "] " +  ChatColor.RED + "[" + ChatColor.WHITE + "amount" + ChatColor.RED + "] " + ChatColor.GREEN + "- " + ChatColor.WHITE + "Auction a Item at a certain amount.");
+			player.sendRawMessage(ChatColor.YELLOW + "/auction list " + ChatColor.GREEN + "- " + ChatColor.WHITE + "Shows items currently for auction.");
+			return true;
+		}
+		return true;
+	}
+
 	/**
 	 * Checks if player has a bank account
 	 * @param p
@@ -136,7 +159,7 @@ public class MCAuction extends JavaPlugin {
 			}
 		}
 	}
-	
+
 	public void sendText(Player p, String t) {
 		p.sendRawMessage(ChatColor.GOLD + "[Auction] " + ChatColor.BLUE + t);
 	}
