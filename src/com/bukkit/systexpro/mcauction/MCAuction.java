@@ -1,5 +1,7 @@
 package com.bukkit.systexpro.mcauction;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.logging.Logger;
 
 import org.bukkit.ChatColor;
@@ -8,14 +10,21 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.util.config.Configuration;
+
 import com.iConomy.*;
 import com.iConomy.system.Account;
 import com.iConomy.system.Holdings;
 
 public class MCAuction extends JavaPlugin {
 
+	public AuctionConfig ac;
+	public String[] itemsA = {"Gold", "Torch"};
 	public iConomy iConomy = null;
+	public File AuctionCon = new File("plugins/Auction/config.yml");
+	public File AuctionItems = new File("plugins/Auction/auction.items");
 	private final Logger log = Logger.getLogger("Minecraft");
+	public boolean globalMessage = false;
 
 	/**
 	 * Disable MCAuction
@@ -30,9 +39,31 @@ public class MCAuction extends JavaPlugin {
 	 */
 	public void onEnable() {
 		log.info("[MCAuction] Loaded.");
-
+		File AuctionDir = new File("plugins/Auction");
+		if(!AuctionDir.exists()) {
+			AuctionDir.mkdir();
+		}
+		if(!this.AuctionItems.exists()) {
+			try {
+				this.AuctionItems.createNewFile();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		
 		//Check for Money Jar
+		this.loadConfig();
 		this.loadMoneyJar();
+	}
+	
+	private void loadConfig() {
+		 Configuration config  = new Configuration(AuctionCon);
+		if(AuctionCon.exists() ) {
+		    config.load();
+		} else {
+			config.setProperty("use-global-message", globalMessage);
+			config.save();
+		}
 	}
 
 	public boolean onCommand(CommandSender sender, Command cmd, String commandLabel, String[] args) {
@@ -49,10 +80,11 @@ public class MCAuction extends JavaPlugin {
 		String command = args[0];
 		if (sender instanceof Player) {
 			Player player = (Player) sender;
-			if(args.length > 2) {
-				return false;
-			}
 			if(command.equalsIgnoreCase("list")) {
+				this.sendText(player, "===Auctioned Items===");
+				for(int x = 0; x < itemsA.length; x++) {
+					this.sendText(player, "(Item) " + itemsA[x]);
+				}
 				return true;
 			}
 			if(command.equalsIgnoreCase("money")) {
@@ -63,11 +95,14 @@ public class MCAuction extends JavaPlugin {
 				} else {
 					this.sendText(player, "You need a Bank Account");
 					return true;
-				}	
+				}
+				
 			}
 			if(command.equalsIgnoreCase("buy"))  {
 				String item = args[1];
 				int amount = Integer.parseInt(args[2]);
+				this.getServer().broadcastMessage(player.getDisplayName() + " is buying " + item + " for " + amount);
+				return true;
 			}
 		}
 		return false;
