@@ -13,6 +13,7 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.util.config.Configuration;
 
+import com.bukkit.systexpro.mcauction.sql.Flatfile;
 import com.iConomy.*;
 import com.iConomy.system.Account;
 import com.iConomy.system.Holdings;
@@ -22,9 +23,10 @@ public class MCAuction extends JavaPlugin {
 	public AuctionConfig ac;
 	public String[] itemsA = {"Gold", "Torch"};
 	public iConomy iConomy = null;
+	public Flatfile fl = new Flatfile("plugins/Auction/db/items.flat", this);
 	public File AuctionCon = new File("plugins/Auction/config.yml");
 	public File AuctionItems = new File("plugins/Auction/auction.items");
-	private final Logger log = Logger.getLogger("Minecraft");
+	public final Logger log = Logger.getLogger("Minecraft");
 	public boolean globalMessage = false;
 	public boolean useMysql = true;
 	public String mysqlHost;
@@ -58,6 +60,12 @@ public class MCAuction extends JavaPlugin {
 			log.info("[MCAuction] Preparing Mysql for MCAuction");
 		} else {
 			log.info("[MCAuction] Preparing FlatFile for MCAuction");
+			fl.write("torch", 20);
+			fl.write("torch", 20);
+			fl.write("torch", 20);
+			fl.write("torch", 20);
+			this.fl.read();
+			this.fl.getItem("torch");
 		}
 	}
 
@@ -81,7 +89,7 @@ public class MCAuction extends JavaPlugin {
 	 * Command Handler
 	 */
 	public boolean onCommand(CommandSender sender, Command cmd, String commandLabel, String[] args) {
-		if(cmd.getName().equals("auction")) {
+		if(cmd.getName().equals("auction") || cmd.getName().equalsIgnoreCase("a")) {
 			if (args.length >= 1 && sender instanceof Player) {
 				return mainCommand(sender,args);
 			} else {
@@ -121,14 +129,13 @@ public class MCAuction extends JavaPlugin {
 			Player player = (Player) sender;
 			if(command.equalsIgnoreCase("list")) {
 				this.sendText(player, "===Auctioned Items===");
-				for(int x = 0; x < itemsA.length; x++) {
-					this.sendText(player, "(Item) " + itemsA[x]);
-				}
+					this.sendText(player, "(Item) " + fl.listItems);
+				
 				return true;
 			} else if(command.equalsIgnoreCase("money")) {
 				if(this.hasBankAccount(player)) {
 					Holdings balance = iConomy.getAccount(player.getDisplayName()).getHoldings();
-					this.sendText(player, Double.toString(balance.balance()));
+					this.sendText(player, "Account: " + Double.toString(balance.balance()));
 					return true;
 				} else {
 					this.sendText(player, "You need a Bank Account");
@@ -137,11 +144,18 @@ public class MCAuction extends JavaPlugin {
 			} else if(command.equalsIgnoreCase("buy"))  {
 				String item = args[1];
 				Material itemM = Material.matchMaterial(item);
-				if(player.getInventory().contains(itemM)) {
-					
-				}
+				
 				int amount = Integer.parseInt(args[2]);
 				this.getServer().broadcastMessage(player.getDisplayName() + " is buying " + item + " for " + amount);
+				return true;
+			} else if(command.equalsIgnoreCase("reload"))  {
+				fl.read();
+				this.sendText(player, "Reloading Item List from FlatFile");
+				return true;
+			} else if(command.equalsIgnoreCase("bid"))  {
+				String item = args[1];
+				Material itemM = Material.matchMaterial(item);
+				int amount = Integer.parseInt(args[2]);
 				return true;
 			} else if(command.equalsIgnoreCase("help"))  {
 				return this.help(player);
@@ -162,6 +176,7 @@ public class MCAuction extends JavaPlugin {
 			player.sendRawMessage(ChatColor.YELLOW + "/auction money " + ChatColor.GREEN + "- " + ChatColor.WHITE + "Views how much money you have.");
 			player.sendRawMessage(ChatColor.YELLOW + "/auction buy " + ChatColor.RED + "[" + ChatColor.WHITE + "item" + ChatColor.RED + "] " +  ChatColor.RED + "[" + ChatColor.WHITE + "amount" + ChatColor.RED + "] " + ChatColor.GREEN + "- " + ChatColor.WHITE + "Auction a Item at a certain amount.");
 			player.sendRawMessage(ChatColor.YELLOW + "/auction list " + ChatColor.GREEN + "- " + ChatColor.WHITE + "Shows items currently for auction.");
+			player.sendRawMessage(ChatColor.YELLOW + "/auction reload " + ChatColor.GREEN + "- " + ChatColor.WHITE + "Reloads the Item's List.");
 			return true;
 		}
 		return true;
