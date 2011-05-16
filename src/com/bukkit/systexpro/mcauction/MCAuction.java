@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.logging.Logger;
 
 import org.bukkit.ChatColor;
+import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -25,6 +26,11 @@ public class MCAuction extends JavaPlugin {
 	public File AuctionItems = new File("plugins/Auction/auction.items");
 	private final Logger log = Logger.getLogger("Minecraft");
 	public boolean globalMessage = false;
+	public boolean useMysql = true;
+	public String mysqlHost;
+	public String mysqlUsername;
+	public String mysqlPassword;
+	public String mysqlDatabase;
 
 	/**
 	 * Disable MCAuction
@@ -43,34 +49,44 @@ public class MCAuction extends JavaPlugin {
 		if(!AuctionDir.exists()) {
 			AuctionDir.mkdir();
 		}
-		if(!this.AuctionItems.exists()) {
-			try {
-				this.AuctionItems.createNewFile();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
 
 		//Check for Money Jar
 		this.loadConfig();
 		this.loadMoneyJar();
-	}
-
-	private void loadConfig() {
-		Configuration config  = new Configuration(AuctionCon);
-		if(AuctionCon.exists() ) {
-			config.load();
+		this.loadConfig();
+		if(this.useMysql == true) {
+			log.info("[MCAuction] Preparing Mysql for MCAuction");
 		} else {
-			config.setProperty("use-global-message", globalMessage);
-			config.save();
+			log.info("[MCAuction] Preparing FlatFile for MCAuction");
 		}
 	}
 
+	/**
+	 * Load up Config File
+	 */
+	private void loadConfig() {
+		Configuration config  = new Configuration(AuctionCon);
+		config.load();
+		this.globalMessage = config.getBoolean("use-global-messages", false);
+		this.useMysql = config.getBoolean("use-mysql", true);
+		this.mysqlHost = config.getString("MysqlHost", "localhost:3306/");
+		this.mysqlUsername = config.getString("MysqlUsername", "root");
+		this.mysqlPassword = config.getString("MysqlPassword", "");
+		this.mysqlDatabase = config.getString("MysqlDatabase", "mcauction");
+		config.save();
+
+	}
+
+	/**
+	 * Command Handler
+	 */
 	public boolean onCommand(CommandSender sender, Command cmd, String commandLabel, String[] args) {
-		if(cmd.getName().equals("auction"))
-		{	
-			return mainCommand(sender,args);
+		if(cmd.getName().equals("auction")) {
+			if (args.length >= 1 && sender instanceof Player) {
+				return mainCommand(sender,args);
+			} else {
+				return this.help(sender);
+			}
 
 		} 
 		return super.onCommand(sender, cmd, commandLabel, args);
@@ -78,7 +94,27 @@ public class MCAuction extends JavaPlugin {
 
 	}
 
+	/** 
+	 * Save Auction Items File
+	public void saveAuctionItems() {
+		Configuration config  = new Configuration(this.AuctionItems);
+		config.setProperty("items", "torch, gold");
+		config.save();
+	}
 
+	/**
+	 * Load Auction Files
+
+	public void loadAuctionItems() {
+		Configuration config  = new Configuration(this.AuctionItems);
+		Object items = config.getProperty("items");
+		String[] items2 = ((String) items).split(", ");
+		for(int x =0; x < items2.length; x++) {
+			System.out.println("[MCAuction] Loaded Item: " + items2[x]);
+		}
+		config.load();
+	}
+	 */
 	private boolean mainCommand(CommandSender sender, String[] args) {
 		String command = args[0];
 		if (sender instanceof Player) {
@@ -100,24 +136,24 @@ public class MCAuction extends JavaPlugin {
 				}
 			} else if(command.equalsIgnoreCase("buy"))  {
 				String item = args[1];
+				Material itemM = Material.matchMaterial(item);
+				if(player.getInventory().contains(itemM)) {
+					
+				}
 				int amount = Integer.parseInt(args[2]);
 				this.getServer().broadcastMessage(player.getDisplayName() + " is buying " + item + " for " + amount);
 				return true;
 			} else if(command.equalsIgnoreCase("help"))  {
 				return this.help(player);
-			} else if(args[0].length() > 0) {
-				player.sendMessage(Integer.toString(args.length));
-				return true;
 			} else {
-				player.sendMessage(Integer.toString(args.length));
-				return true;
+				return false;
 			}
 		}
 		sender.sendMessage(Integer.toString(args.length));
 		return true;
 	}
-	
-	
+
+
 	private boolean help(CommandSender sender) {
 		if (sender instanceof Player) {
 			Player player = (Player) sender;
